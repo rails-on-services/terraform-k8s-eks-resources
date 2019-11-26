@@ -16,14 +16,11 @@ def external_data():
   # AWS profile
   aws_profile=input_dict["aws_profile"]
 
-  # Kube config
-  config_name=input_dict["config_name"]
-  dirname = os.path.dirname(__file__)
-  kubeconfigpath = os.path.join(dirname, "../../../kubeconfig_{}".format(config_name))
-
-  # Check if kubeconfig file exists
-  if not os.path.isfile(kubeconfigpath) :
-    error_output("Kubeconfig not valid: {}".format(kubeconfigpath))
+  # Generate kubeconfig file
+  kubeconfig = input_dict["kubeconfig"]
+  f = open("kube_config.yaml", "w")
+  f.write(kubeconfig)
+  f.close()
 
   hostname = None
   tries = 100
@@ -31,13 +28,13 @@ def external_data():
     try:
       # Get istio load balancer hostname attached to our cluster
       hostname=subprocess.check_output(['kubectl', '--kubeconfig', \
-          '{}'.format(kubeconfigpath), \
+          'kube_config.yaml', \
           '-n', 'istio-system', \
           'get', 'ingress', \
           'istio-alb-ingressgateway', \
           '-o', 'jsonpath={.status.loadBalancer.ingress[*].hostname}']).decode('utf-8')
       loadbalancers=subprocess.check_output(['aws', 'elbv2', \
-        'describe-load-balancers',
+        'describe-load-balancers', \
         '--profile', '{}'.format(aws_profile), \
         '--query', 'LoadBalancers[*]', \
         '--output', 'json'])

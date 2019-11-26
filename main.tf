@@ -18,7 +18,7 @@ data "external" "alb_arn" {
   program    = ["python", "${path.module}/files/get_alb_arn.py"]
 
   query = {
-    config_name = "${var.cluster_name}",
+    kubeconfig  = var.kubeconfig,
     aws_profile = var.aws_profile
   }
 }
