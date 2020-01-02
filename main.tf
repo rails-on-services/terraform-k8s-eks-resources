@@ -95,7 +95,6 @@ resource "helm_release" "aws-alb-ingress-controller" {
     cluster_name = var.cluster_name,
     aws_region   = var.region,
     vpc_id       = var.vpc_id,
-    #default_tag  =
     }
     )
   ]
