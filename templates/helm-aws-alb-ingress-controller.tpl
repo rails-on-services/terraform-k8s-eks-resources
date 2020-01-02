@@ -15,3 +15,4 @@ scope:
   ingressClass: alb
 extraArgs:
   feature-gates: 'waf=false'
+  {* default-tags: ${default_tag} *}

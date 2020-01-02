@@ -67,7 +67,7 @@ resource "helm_release" "cluster-logging-fluentd" {
   namespace    = "kube-system"
   wait         = true
   force_update = true
-  version      = "0.0.9"
+  version      = "0.0.10"
 
   values = [templatefile("${path.module}/templates/helm-fluentd-gcp.tpl", {
     cluster_name               = var.cluster_name,
@@ -94,7 +94,8 @@ resource "helm_release" "aws-alb-ingress-controller" {
   values = [templatefile("${path.module}/templates/helm-aws-alb-ingress-controller.tpl", {
     cluster_name = var.cluster_name,
     aws_region   = var.region,
-    vpc_id       = var.vpc_id
+    vpc_id       = var.vpc_id,
+    #default_tag  =
     }
     )
   ]
