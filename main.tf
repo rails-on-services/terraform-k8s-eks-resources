@@ -67,7 +67,7 @@ resource "helm_release" "cluster-logging-fluentd" {
   namespace    = "kube-system"
   wait         = true
   force_update = true
-  version      = "0.0.10"
+  version      = "0.0.11"
 
   values = [templatefile("${path.module}/templates/helm-fluentd-gcp.tpl", {
     cluster_name               = var.cluster_name,
