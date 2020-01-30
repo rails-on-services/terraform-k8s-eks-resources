@@ -13,16 +13,6 @@ data "helm_repository" "istio" {
   url  = "https://gcsweb.istio.io/gcs/istio-release/releases/${var.istio_version}/charts/"
 }
 
-data "external" "alb_arn" {
-  depends_on = [helm_release.istio-alb-ingressgateway]
-  program    = ["python", "${path.module}/files/get_alb_arn.py"]
-
-  query = {
-    kubeconfig  = var.kubeconfig,
-    aws_profile = var.aws_profile
-  }
-}
-
 resource "kubernetes_namespace" "extra_namespaces" {
   count = length(var.extra_namespaces)
 
@@ -185,21 +175,43 @@ resource "helm_release" "istio" {
   ]
 }
 
-resource "helm_release" "istio-alb-ingressgateway" {
+resource "kubernetes_ingress" "istio-alb-ingressgateway" {
   depends_on = [helm_release.istio]
-  repository = data.helm_repository.ros.metadata.0.name
-  chart      = "istio-alb-ingressgateway"
-  name       = "istio-alb-ingressgateway"
-  namespace  = "istio-system"
-  wait       = true
+  metadata {
+    name = "istio-alb-ingressgateway"
+    namespace  = "istio-system"
 
-  set {
-    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/certificate-arn"
-    value = var.istio_ingressgateway_alb_cert_arn
+     annotations = {
+      "alb.ingress.kubernetes.io/load-balancer-attributes" = "idle_timeout.timeout_seconds=900"
+      "alb.ingress.kubernetes.io/actions.ssl-redirect"     = "{\"Type\": \"redirect\", \"RedirectConfig\":{\"Protocol\": \"HTTPS\", \"Port\": \"443\", \"StatusCode\": \"HTTP_301\"}}"
+      "alb.ingress.kubernetes.io/backend-protocol"         = "HTTP"
+      "alb.ingress.kubernetes.io/certificate-arn"          = var.istio_ingressgateway_alb_cert_arn
+      "alb.ingress.kubernetes.io/healthcheck-path"         = "/healthz/ready"
+      "alb.ingress.kubernetes.io/healthcheck-port"         = "15020"
+      "alb.ingress.kubernetes.io/listen-ports"             = "[{\"HTTP\": 80},{\"HTTPS\": 443}]"
+      "alb.ingress.kubernetes.io/scheme"                   = "internet-facing"
+      "alb.ingress.kubernetes.io/target-type"              = "ip"
+      "kubernetes.io/ingress.class"                        = "alb"
+    }
   }
 
-  lifecycle {
-    create_before_destroy = false
+  spec {
+    backend {
+      service_name = "istio-ingressgateway"
+      service_port = 80
+    }
+    rule {
+      http {
+        path {
+          backend {
+            service_name = "ssl-redirect"
+            service_port = "use-annotation"
+          }
+
+          path = "/*"
+        }
+      }
+    }
   }
 }
 
